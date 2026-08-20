@@ -147,9 +147,12 @@ tài nguyên và gây oversubscription. Vì vậy `-t 8` là điểm cân bằng
 > Bỏ trống nếu không làm. Xem `bonus/README.md`. Đừng làm hết — **một** finding sâu
 > ăn điểm hơn năm bảng nông.
 
-**Đã làm:** B5/C9 embedding serving regime ở chế độ offline.
+**Đã làm:** B2 context-length sweep và B5/C9 embedding serving regime ở chế độ offline.
 
 **Numbers:**
+
+**B2/B3 numbers:** context 256 token đạt `119.0 tok/s`, còn 1024 token đạt `113.4 tok/s`;
+throughput còn `0.95x` khi context tăng 4x.
 
 Demo offline xếp đúng tài liệu embedding serving ở đầu với cosine similarity `0.572`.
 
@@ -157,6 +160,10 @@ CUDA source build cho B1/C6 bị chặn ở bước configure vì CUDA Toolkit 1
 GCC 13.3; mình cũng đã thử ép GCC 12 nhưng CMake vẫn không hoàn tất compiler check.
 
 **Điều này nói lên gì mà deck chưa nói:**
+
+Context sweep cho thấy prefill ở 1024 token tốn `9030 ms`, nhưng mới chỉ là `1.05x`
+scaling tuyến tính, chưa đủ dài để thấy rõ phần quadratic của attention. Vì vậy mình
+không nên nhồi quá nhiều chunk vào RAG chỉ vì context window còn trống.
 
 Embedding serving là prefill-bound: mỗi text cần một forward pass, không có decode loop
 hay KV cache như chat serving. Vì vậy throughput phù hợp với static batching thay vì
