@@ -147,19 +147,21 @@ tài nguyên và gây oversubscription. Vì vậy `-t 8` là điểm cân bằng
 > Bỏ trống nếu không làm. Xem `bonus/README.md`. Đừng làm hết — **một** finding sâu
 > ăn điểm hơn năm bảng nông.
 
-**Đã làm:** _<B1 build-compare / B2 sweep nào / B4 challenge nào / B5 lựa chọn nào>_
+**Đã làm:** B5/C9 embedding serving regime ở chế độ offline.
 
 **Numbers:**
 
-```
-before:  <số>
-after:   <số>
-speedup: <X.Y>×
-```
+Demo offline xếp đúng tài liệu embedding serving ở đầu với cosine similarity `0.572`.
+
+CUDA source build cho B1/C6 bị chặn ở bước configure vì CUDA Toolkit 12.0 từ chối
+GCC 13.3; mình cũng đã thử ép GCC 12 nhưng CMake vẫn không hoàn tất compiler check.
 
 **Điều này nói lên gì mà deck chưa nói:**
 
-_(để trống nếu bạn không làm phần này)_
+Embedding serving là prefill-bound: mỗi text cần một forward pass, không có decode loop
+hay KV cache như chat serving. Vì vậy throughput phù hợp với static batching thay vì
+continuous batching. Demo dùng bag-of-words để minh họa logic, nên production vẫn cần
+embedding model chuyên dụng như BGE-M3 hoặc Qwen3-Embedding.
 
 ---
 
