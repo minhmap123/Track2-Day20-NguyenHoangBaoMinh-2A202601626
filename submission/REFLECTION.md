@@ -6,9 +6,10 @@
 >
 > `make verify` sẽ fail nếu còn placeholder chưa điền. Đó là cố ý.
 
-**Họ Tên:** _<Họ Tên>_
-**Cohort:** _<A20-K1 / A20-K2 / ...>_
-**Ngày submit:** _<YYYY-MM-DD>_
+**Họ Tên:** Nguyễn Hoàng Bảo Minh
+**MSSV:** 2A202601626
+**Cohort:** A20-K4
+**Ngày submit:** 2026-08-20
 
 ---
 
@@ -16,23 +17,25 @@
 
 > Từ `make probe`. Paste output hoặc điền tay.
 
-- **OS:** _<macOS 14 / Windows 11 / Ubuntu 24.04 / ...>_
-- **CPU:** _<Apple M2 / Intel i7-12700H / AMD Ryzen 7 5800H>_
-- **Cores:** _<physical / logical>_
-- **CPU extensions:** _<AVX2 / AVX-512 / NEON / —>_
-- **RAM:** _<GB>_
-- **Accelerator:** _<NVIDIA RTX 4060 / Apple Metal / Vulkan / CPU only>_
-- **llama.cpp asset đã tải:** _<vd: llama-b10488-bin-macos-arm64.tar.gz>_
-- **Model đã dùng:** _<Gemma 4 E2B / Qwen3.5 0.8B>_ (`LAB_MODEL=`_<gemma4-e2b / qwen35-0.8b>_)
-- **Quantization:** _<primary>_ + _<compare>_ (từ `models/active.json`)
+- **OS:** Linux 5.15.167.4-microsoft-standard-WSL2 (WSL2)
+- **CPU:** 11th Gen Intel Core i7-11800H @ 2.30GHz
+- **Cores:** 8 physical / 16 logical
+- **CPU extensions:** AVX-512, AVX2
+- **RAM:** 15.5 GB
+- **Accelerator:** NVIDIA GeForce RTX 3050 Laptop GPU, 4 GB
+- **llama.cpp asset đã tải:** llama.cpp b10488, CUDA build
+- **Model đã dùng:** Gemma 4 E2B (`LAB_MODEL=gemma4-e2b`)
+- **Quantization:** UD-Q4_K_XL + UD-Q2_K_XL
 
-**Chạy ở đâu:** _<laptop của tôi / Colab / Kaggle>_
+**Chạy ở đâu:** laptop local trong WSL2
 _(Nếu dùng cloud fallback: nói rõ vì sao — RAM < 8 GB, setup fail, v.v. Không mất điểm.)_
 
 **Setup story** (≤ 80 chữ): điều gì cần thay đổi để lab chạy trên máy bạn? Có bước
 nào fail rồi phải workaround không?
 
-_Answer here._
+Mình chạy lab local trong WSL2. Sau `make setup`, mọi thứ hoạt động bình thường. Port
+8080 bị Apache chiếm nên mình dùng port 8090 cho server và các lệnh client. Mình giữ
+Gemma mặc định vì máy có đủ RAM.
 
 ---
 
@@ -42,14 +45,17 @@ _Answer here._
 
 | Quantization | Size (GB) | Load (ms) | TTFT P50/P95 (ms) | TPOT P50/P95 (ms) | E2E P50/P95/P99 (ms) | Decode (tok/s) |
 |---|--:|--:|--:|--:|--:|--:|
-| UD-Q4_K_XL | | | | | | |
-| UD-Q2_K_XL | | | | | | |
+| UD-Q4_K_XL | 2.97 | 3068 | 223 / 326 | 50.9 / 55.2 | 3405 / 3671 / 3671 | 19.7 |
+| UD-Q2_K_XL | 2.24 | 3023 | 414 / 487 | 46.7 / 47.9 | 3223 / 3456 / 3456 | 21.4 |
 
 **Quan sát** (≤ 60 chữ): 2-bit nhanh hơn bao nhiêu, và **có đáng không**? Bạn đã thử
 hỏi cùng một câu trên cả hai (`make serve` vs `.venv/bin/python labs/02-serve/serve.py --compare`)
 chưa? Chất lượng khác nhau thế nào?
 
-_Answer here._
+UD-Q2_K_XL nhỏ hơn 0.73 GB và decode nhanh hơn 1.09x (21.4 so với 19.7 tok/s),
+nhưng TTFT P50 lại chậm hơn 1.86x. Theo mình, Q2 phù hợp khi cần tiết kiệm dung lượng
+và ưu tiên throughput; Q4 hợp lý hơn nếu cần TTFT tốt hơn. Mình chưa so sánh cùng một
+prompt để kết luận chắc chắn về chất lượng trả lời.
 
 ---
 
@@ -59,22 +65,24 @@ _Answer here._
 
 | Users | RPS | P50 (ms) | P95 (ms) | P99 (ms) | Eff. concurrency | Failures |
 |--:|--:|--:|--:|--:|--:|--:|
-| 10 | | | | | | |
-| 50 | | | | | | |
+| 10 | 0.49 | 16000 | 23000 | 25000 | 7.3 | 0.0% |
+| 50 | 0.63 | 34000 | 55000 | 56000 | 19.8 | 0.0% |
 
-- **Offered load tăng 5×, throughput thực tăng:** _<X.XX>×_
-- **P95 tăng:** _<X.XX>×_
-- **Effective concurrency ở 50 users:** _<số>_ so với `--parallel` = _<số>_ slots
+- **Offered load tăng 5×, throughput thực tăng:** 1.28x
+- **P95 tăng:** 2.39x
+- **Effective concurrency ở 50 users:** 19.8 so với `--parallel` = 4 slots
 
 **Peak `llamacpp:n_busy_slots_per_decode`** (từ `make metrics` khi `make load-50` đang
-chạy): _<số>_ / _<slots>_ slots
+chạy): 3.95 / 4 slots
 
 **Saturation reading** (≤ 80 chữ): server của bạn bão hoà ở đâu, và **bằng chứng nào**
 thuyết phục bạn? Nếu P95 tăng nhanh hơn RPS thì phần latency thêm đó là queue time hay
 compute time — bạn biết bằng cách nào? Nếu bạn phải nâng goodput@SLO, bạn sẽ đổi knob
 nào **trước**, và vì sao knob đó?
 
-_Answer here._
+Peak mình đo được là 3.95/4 slots. LLM chiếm gần như toàn bộ latency pipeline; keyword
+retrieval và embedding fallback gần như không tốn thời gian. Nếu muốn giảm latency 2x,
+mình sẽ giảm số output token hoặc tối ưu model/runtime vì decode là bottleneck chính.
 
 ---
 
@@ -84,23 +92,25 @@ _Answer here._
 
 | Day | Piece | Real hay stub? |
 |---|---|---|
-| N16 Cloud/IaC | | |
-| N17 Data pipeline | | |
-| N18 Lakehouse | | |
-| N19 Vector + features | | |
+| N16 Cloud/IaC | localhost only | stub |
+| N17 Data pipeline | in-memory toy data | stub |
+| N18 Lakehouse | toy dictionaries, no lakehouse service | stub |
+| N19 Vector + features | keyword-overlap retrieval, no vector index | stub |
 | N20 Serving | `llama-server` | real |
 
 **Latency split** (mean của 3 query, từ output của `pipeline.py`):
 
-- embed: _<ms>_
-- retrieve: _<ms>_
-- llm: _<ms>_
-- **stage chiếm nhiều nhất:** _<stage>_ (_<%>_ của total)
+- embed: 0.0 ms
+- retrieve: 0.0 ms
+- llm: 2609.4 ms
+- **stage chiếm nhiều nhất:** llm (100% của total)
 
 **Reflection** (≤ 60 chữ): bottleneck ở đâu? Có khớp với kỳ vọng của bạn không? Nếu
 phải giảm latency của pipeline này 2×, bạn sẽ tấn công vào đâu?
 
-_Answer here._
+LLM là bottleneck, đúng như mình dự đoán vì model chạy local và decode chiếm gần như
+toàn bộ 2609.5 ms tổng. Nếu cần giảm latency 2x, mình sẽ giảm số token sinh hoặc tối ưu
+model/runtime; tối ưu keyword retrieval không tạo khác biệt đáng kể với toy corpus.
 
 ---
 
@@ -110,22 +120,25 @@ _Answer here._
 > một before/after thật (`benchmarks/01-tuning-tg128.md`). Đổi quantization,
 > `LAB_N_CTX`, hay `--parallel` rồi đo lại cũng được.
 
-**Change:** _<vd: hạ -t từ 16 xuống 8; vd: đổi sang UD-Q2_K_XL; vd: --parallel 4 → 8>_
+**Change:** Mình tăng số thread từ `-t 1` lên `-t 8`.
 
 ```
-before:  <số + đơn vị>
-after:   <số + đơn vị>
-speedup: <X.Y>×
+before:  -t 1 -> 6.3 tok/s
+after:   -t 8 -> 18.6 tok/s
+speedup: 2.95x
 ```
 
 **Tại sao nó work** (1–2 đoạn — đây là phần grader đọc kỹ nhất):
 
-_Giải thích như đang nói với bạn ngồi cạnh. Bám vào **cơ chế**, không phải "vibes":
-memory bandwidth? vector width? cache residency? scheduling? queueing? Nếu kết quả
-**khác** với kỳ vọng từ deck — nói rõ, và giải thích vì sao. Grader thưởng điểm cho
-lập luận đúng về một kết quả bất ngờ, hơn là một con số đẹp không được giải thích._
+Mình chọn `-t 8`, đúng bằng số physical cores. `-t 8` đạt 18.6 tok/s, cao hơn 2.95x
+so với 6.3 tok/s ở `-t 1`. Throughput tăng vì decode tận dụng được các physical cores
+để xử lý công việc song song.
 
-_Answer here._
+Khi thử 16 và 32 threads, throughput giảm còn 4.8 và 1.8 tok/s. Decode bị giới hạn
+bởi memory bandwidth và cache, nên các thread vượt quá số physical cores chỉ tranh chấp
+tài nguyên và gây oversubscription. Vì vậy `-t 8` là điểm cân bằng tốt nhất trên máy mình.
+
+
 
 ---
 
